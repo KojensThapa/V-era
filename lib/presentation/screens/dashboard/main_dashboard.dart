@@ -7,7 +7,7 @@ class MainDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Text('Main Dashboard'),
+        child: Text('Main Dashboard is here.'),
       ),
     );
   }

@@ -1,17 +1,20 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:v_era/providers/providers.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:v_era/presentation/screens/login/login_screen.dart';
+import 'package:v_era/providers/view_models/signup_view_model.dart';
 
-class SignupScreen extends StatefulWidget {
+class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({Key? key}) : super(key: key);
 
   @override
-  _SignupScreenState createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -34,23 +37,20 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   void _signup() {
-    if (_formKey.currentState!.validate()) {
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Account created successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      
-      // Navigate to login screen after a delay
-      Future.delayed(Duration(seconds: 2), () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => LoginScreen()),
-        );
-      });
-    }
+    //Direct navigation for UI testing
+    Navigator.pushReplacement(context, 
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+    );
+    // if (_formKey.currentState!.validate()) {
+    //   ref.read(signupViewModelProvider.notifier).signup(
+    //     name: _nameController.text,
+    //     email: _emailController.text,
+    //     phone: _phoneController.text,
+    //     password: _passwordController.text,
+    //     profileImage: _profileImage,
+    //     agreeToTerms: true,
+    //   );
+    // }
   }
 
   @override
@@ -65,6 +65,36 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final signupState = ref.watch(signupViewModelProvider);
+    
+    // Listen for signup success
+    ref.listen(signupViewModelProvider, (previous, next) {
+      if (next.isSignupSuccessful) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Account created successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Navigate to login screen after a delay
+        Future.delayed(Duration(seconds: 2), () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => LoginScreen()),
+          );
+        });
+      }
+      
+      if (next.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.error!)),
+        );
+        ref.read(signupViewModelProvider.notifier).clearError();
+      }
+    });
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -384,7 +414,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 ],
                               ),
                               child: ElevatedButton(
-                                onPressed: _signup,
+                                onPressed: signupState.isLoading ? null : _signup,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.transparent,
                                   shadowColor: Colors.transparent,
@@ -392,14 +422,16 @@ class _SignupScreenState extends State<SignupScreen> {
                                     borderRadius: BorderRadius.circular(15),
                                   ),
                                 ),
-                                child: Text(
-                                  'SIGN UP',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                                child: signupState.isLoading
+                                    ? CircularProgressIndicator(color: Colors.white)
+                                    : Text(
+                                        'SIGN UP',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                               ),
                             ),
                             SizedBox(height: 25),

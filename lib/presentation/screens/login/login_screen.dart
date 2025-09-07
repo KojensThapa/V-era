@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:v_era/providers/providers.dart';
 import 'package:v_era/presentation/screens/dashboard/main_dashboard.dart';
 import 'package:v_era/presentation/screens/signup/signup_screen.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -25,11 +27,21 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _login() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => MainDashboard()),
-    );
-  }
+  // Direct navigation for UI testing - bypasses authentication
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => MainDashboard()),
+  );
+  
+  // Comment out or remove the Riverpod authentication code:
+  // if (_formKey.currentState!.validate()) {
+  //   ref.read(authViewModelProvider.notifier).login(
+  //     _emailController.text,
+  //     _passwordController.text,
+  //     _rememberMe,
+  //   );
+  // }
+}
 
   void _navigateToSignup() {
     Navigator.push(
@@ -40,6 +52,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authViewModelProvider);
+    
+    // Listen for authentication success
+    ref.listen(authViewModelProvider, (previous, next) {
+      if (next.isAuthenticated) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MainDashboard()),
+        );
+      }
+      
+      if (next.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.error!)),
+        );
+        ref.read(authViewModelProvider.notifier).clearError();
+      }
+    });
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -63,27 +94,22 @@ class _LoginScreenState extends State<LoginScreen> {
                         Column(
                           children: [
                             SizedBox(height: 60),
-                            // Logo and Title
+                            // Logo and Title (unchanged)
                             Column(
                               children: [
-                                // Circular V Logo with white background and black V
-                                // Circular V Logo with thicker border
                                 Container(
                                   width: 130,
                                   height: 130,
                                   decoration: BoxDecoration(
-                                    color: Colors.white, // White background
+                                    color: Colors.white,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: Color(0xFF00D4AA), // Green border
-                                      width:
-                                          8, // Increased border thickness from 2 to 4
+                                      color: Color(0xFF00D4AA),
+                                      width: 8,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Color(
-                                          0xFF00D4AA,
-                                        ).withOpacity(0.3),
+                                        color: Color(0xFF00D4AA).withOpacity(0.3),
                                         blurRadius: 15,
                                         spreadRadius: 3,
                                         offset: Offset(0, 4),
@@ -96,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       style: GoogleFonts.poppins(
                                         fontSize: 42,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.black, // Black V letter
+                                        color: Colors.black,
                                       ),
                                     ),
                                   ),
@@ -135,99 +161,61 @@ class _LoginScreenState extends State<LoginScreen> {
                               key: _formKey,
                               child: Column(
                                 children: [
-                                  // Email Field
+                                  // Email Field (unchanged)
                                   TextFormField(
                                     controller: _emailController,
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white,
-                                    ),
+                                    style: GoogleFonts.poppins(color: Colors.white),
                                     decoration: InputDecoration(
                                       labelText: 'Email',
-                                      labelStyle: GoogleFonts.poppins(
-                                        color: Colors.white70,
-                                      ),
-                                      prefixIcon: Icon(
-                                        Icons.email,
-                                        color: Colors.white70,
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(15),
-                                        borderSide: BorderSide.none,
-                                      ),
+                                      labelStyle: GoogleFonts.poppins(color: Colors.white70),
+                                      prefixIcon: Icon(Icons.email, color: Colors.white70),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
                                       filled: true,
                                       fillColor: Colors.white.withOpacity(0.1),
-                                      contentPadding: EdgeInsets.symmetric(
-                                        vertical: 15,
-                                        horizontal: 20,
-                                      ),
+                                      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
                                     ),
                                     validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter your email';
-                                      }
-                                      if (!value.contains('@')) {
-                                        return 'Please enter a valid email';
-                                      }
+                                      if (value == null || value.isEmpty) return 'Please enter your email';
+                                      if (!value.contains('@')) return 'Please enter a valid email';
                                       return null;
                                     },
                                   ),
                                   SizedBox(height: 20),
-                                  // Password Field
+                                  // Password Field (unchanged)
                                   TextFormField(
                                     controller: _passwordController,
                                     obscureText: _obscurePassword,
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white,
-                                    ),
+                                    style: GoogleFonts.poppins(color: Colors.white),
                                     decoration: InputDecoration(
                                       labelText: 'Password',
-                                      labelStyle: GoogleFonts.poppins(
-                                        color: Colors.white70,
-                                      ),
-                                      prefixIcon: Icon(
-                                        Icons.lock,
-                                        color: Colors.white70,
-                                      ),
+                                      labelStyle: GoogleFonts.poppins(color: Colors.white70),
+                                      prefixIcon: Icon(Icons.lock, color: Colors.white70),
                                       suffixIcon: IconButton(
                                         icon: Icon(
-                                          _obscurePassword
-                                              ? Icons.visibility_off
-                                              : Icons.visibility,
+                                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
                                           color: Colors.white70,
                                         ),
                                         onPressed: () {
                                           setState(() {
-                                            _obscurePassword =
-                                                !_obscurePassword;
+                                            _obscurePassword = !_obscurePassword;
                                           });
                                         },
                                       ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(15),
-                                        borderSide: BorderSide.none,
-                                      ),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
                                       filled: true,
                                       fillColor: Colors.white.withOpacity(0.1),
-                                      contentPadding: EdgeInsets.symmetric(
-                                        vertical: 15,
-                                        horizontal: 20,
-                                      ),
+                                      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
                                     ),
                                     validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter your password';
-                                      }
-                                      if (value.length < 6) {
-                                        return 'Password must be at least 6 characters';
-                                      }
+                                      if (value == null || value.isEmpty) return 'Please enter your password';
+                                      if (value.length < 6) return 'Password must be at least 6 characters';
                                       return null;
                                     },
                                   ),
                                   SizedBox(height: 15),
-                                  // Remember Me & Forgot Password
+                                  // Remember Me & Forgot Password (unchanged)
                                   Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Row(
                                         children: [
@@ -238,16 +226,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 _rememberMe = value!;
                                               });
                                             },
-                                            fillColor:
-                                                MaterialStateProperty.all(
-                                                  Color(0xFF00D4AA),
-                                                ),
+                                            fillColor: MaterialStateProperty.all(Color(0xFF00D4AA)),
                                           ),
                                           Text(
                                             'Remember me',
-                                            style: GoogleFonts.poppins(
-                                              color: Colors.white70,
-                                            ),
+                                            style: GoogleFonts.poppins(color: Colors.white70),
                                           ),
                                         ],
                                       ),
@@ -264,47 +247,38 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ],
                                   ),
                                   SizedBox(height: 30),
-                                  // Login Button
+                                  // Login Button with loading state
                                   Container(
                                     width: double.infinity,
                                     height: 55,
                                     decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Color(0xFF00D4AA),
-                                          Color(0xFF26E5D8),
-                                        ],
-                                      ),
+                                      gradient: LinearGradient(colors: [Color(0xFF00D4AA), Color(0xFF26E5D8)]),
                                       borderRadius: BorderRadius.circular(15),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Color(
-                                            0xFF00D4AA,
-                                          ).withOpacity(0.3),
+                                          color: Color(0xFF00D4AA).withOpacity(0.3),
                                           blurRadius: 15,
                                           offset: Offset(0, 5),
                                         ),
                                       ],
                                     ),
                                     child: ElevatedButton(
-                                      onPressed: _login,
+                                      onPressed: authState.isLoading ? null : _login,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.transparent,
                                         shadowColor: Colors.transparent,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            15,
-                                          ),
-                                        ),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                                       ),
-                                      child: Text(
-                                        'LOGIN',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                      ),
+                                      child: authState.isLoading
+                                          ? CircularProgressIndicator(color: Colors.white)
+                                          : Text(
+                                              'LOGIN',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.white,
+                                              ),
+                                            ),
                                     ),
                                   ),
                                 ],
@@ -312,60 +286,39 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ],
                         ),
-                        // Bottom section with social login and signup
+                        // Bottom section with social login and signup (unchanged)
                         Column(
                           children: [
                             SizedBox(height: 25),
-                            // Divider
                             Row(
                               children: [
                                 Expanded(child: Divider(color: Colors.white30)),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 15,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 15),
                                   child: Text(
                                     'Or continue with',
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white70,
-                                    ),
+                                    style: GoogleFonts.poppins(color: Colors.white70),
                                   ),
                                 ),
                                 Expanded(child: Divider(color: Colors.white30)),
                               ],
                             ),
                             SizedBox(height: 25),
-                            // Social Login Buttons
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                SocialLoginButton(
-                                  icon: Icons.email,
-                                  onPressed: () {},
-                                ),
+                                SocialLoginButton(icon: Icons.email, onPressed: () {}),
                                 SizedBox(width: 20),
-                                SocialLoginButton(
-                                  icon: Icons.facebook,
-                                  onPressed: () {},
-                                ),
+                                SocialLoginButton(icon: Icons.facebook, onPressed: () {}),
                                 SizedBox(width: 20),
-                                SocialLoginButton(
-                                  icon: Icons.phone_iphone,
-                                  onPressed: () {},
-                                ),
+                                SocialLoginButton(icon: Icons.phone_iphone, onPressed: () {}),
                               ],
                             ),
                             SizedBox(height: 30),
-                            // Sign up Link
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
-                                  "Don't have an account? ",
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white70,
-                                  ),
-                                ),
+                                Text("Don't have an account? ", style: GoogleFonts.poppins(color: Colors.white70)),
                                 GestureDetector(
                                   onTap: _navigateToSignup,
                                   child: Text(
@@ -378,7 +331,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ],
                             ),
-                            SizedBox(height: 20), // Extra bottom padding
+                            SizedBox(height: 20),
                           ],
                         ),
                       ],
@@ -394,15 +347,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+// SocialLoginButton remains unchanged
 class SocialLoginButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;
 
-  const SocialLoginButton({
-    required this.icon,
-    required this.onPressed,
-    Key? key,
-  }) : super(key: key);
+  const SocialLoginButton({required this.icon, required this.onPressed, Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
